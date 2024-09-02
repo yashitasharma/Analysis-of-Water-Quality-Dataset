@@ -1,0 +1,403 @@
+---
+title: "Final Project: *Yashita Sharma*"
+format: 
+  html: 
+    toc: true
+    toc_float: true
+  pdf: default
+  docx: default
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+# Report on Analysis of Water Quality Dataset
+
+**Data Source:** Kaggle
+
+### **Introduction**
+
+In order to preserve the health of aquatic ecosystems and guarantee the safety of drinking water, water quality evaluation is essential. We examine a water quality dataset that we downloaded from Kaggle in this study. The dataset includes data on several water quality parameters that were measured at various times and places.
+\
+**Objective**\
+Goals are to examine the dataset, spot trends, patterns, and abnormalities in the parameters that determine the quality of the water, and offer information that can help with decision-making on environmental preservation and water management.
+
+```{r, echo =FALSE}
+# Load necessary libraries
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(jsonlite)
+
+# Load the dataset
+df <- read_csv("C:/Users/HP/OneDrive/Desktop/Master's/fourth sem_spring2024/ML and Data Science/waterquality.csv")
+
+# View the first few rows of the dataset
+head(df)
+
+# Load metadata from JSON file
+metadata <- fromJSON("C:/Users/HP/OneDrive/Desktop/Master's/fourth sem_spring2024/ML and Data Science/water-quality-data-metadata.json")
+
+# View the structure of the metadata
+str(metadata)
+
+# Summary statistics for numerical variables
+summary_stats <- summary(df)
+print(summary_stats)
+
+# Histograms for numerical variables with different colors
+histograms <- lapply(df, function(x) {
+  # Remove non-finite values
+  x <- na.omit(x)
+  if(length(unique(x)) > 1) {
+    breaks <- seq(min(x), max(x), length.out = length(unique(x)) + 1)
+    colors <- rainbow(length(breaks), start = 0, end = 1)
+    hist(x, main = "Histogram", breaks = breaks, col = colors, xlab = names(x))
+  } else {
+    hist(x, main = "Histogram", xlab = names(x))
+  }
+})
+print(histograms)
+
+```
+
+In order to preserve the health of aquatic ecosystems and guarantee the safety of drinking water, water quality evaluation is essential.\
+We examine a water quality dataset that we downloaded from Kaggle in this study. The dataset includes data on several water quality parameters that were measured at various times and places. The object histograms hold the 'histograms'. Herein we can see density was at its peak from june 1997 to april 2005 and respectively frequency fluctuating per year.
+
+**Dataset Description**
+
+The dataset consists of a CSV file named "waterquality.csv" containing 14 columns and several thousand rows. Each row represents a measurement of water quality parameters at a specific location and time. The columns include:
+
+1.  **ph:** pH value of the water
+
+2.  **Hardness:** Hardness of the water
+
+3.  **Solids:** Total dissolved solids in the water
+
+4.  **Chloramines:** Concentration of chloramines in the water
+
+5.  **Sulfate:** Concentration of sulfate in the water
+
+6.  **Conductivity:** Electrical conductivity of the water
+
+7.  **Organic_carbon:** Concentration of organic carbon in the water
+
+8.  **Trihalomethanes:** Concentration of trihalomethanes in the water
+
+9.  **Turbidity:** Turbidity of the water
+
+10. **Potability:** Target variable indicating whether the water is potable (1) or not (0)
+
+11. **ph_gp:** pH group (e.g., acidic, neutral, alkaline)
+
+12. **Hardness_gp:** Hardness group
+
+13. **Solids_gp:** Total dissolved solids group
+
+14. **Potability_gp:** Potability group
+
+    **Summary and Missing Values:** The dataframe df's dimensions, structure, and missing values in each column are all disclosed in this output.\
+    Dataframe Dimensions: The dim function is used to output the dataframe's dimensions.\
+    The dataframe comprises 8 columns and 2371 rows, according to the output.\
+
+    Details on the Dataframe:\
+    The str function is used to print structure information about the dataframe.\
+    With 2371 rows and 8 columns, the dataframe is a special table dataframe (spc_tbl_df), according to the output, which shows the dataframe's structure.\
+    Names and data types (Date, Salinity (ppt), Dissolved Oxygen (mg/L), pH, SecchiDepth (m), WaterDepth (m), WaterTemp (C), and AirTemp (C)) are labeled for each column.
+    Date, numeric, and double are the designated data types for each column.
+
+```{r, echo=FALSE}
+
+# Print dimensions of the dataframe
+cat("Dimensions of the dataframe:")
+dim(df)
+
+# Print information about the dataframe
+cat("\nInformation about the dataframe:")
+str(df)
+
+# Check for missing values in each column
+cat("\nCount of missing values for each column:")
+colSums(is.na(df))
+
+
+```
+
+The spec attribute also offers details about the column specifications, including the types of columns and the format of the Date column.
+If there were any issues with reading or processing the data, these are indicated via the difficulties property.
+
+Count of Missing Values for Each Column: The colSums(is.na(df)) function is used to print the number of missing values for each column.\
+The amount of missing values for each column in the dataframe is shown in the output.
+
+**Salinity Distribution**
+
+```{r, echo=FALSE}
+# Load necessary libraries
+library(ggplot2)
+
+# Set theme
+theme_set(theme_minimal())
+
+# Create histogram
+ggplot(df, aes(x = `Salinity (ppt)`)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", aes(y = ..density..)) +
+  geom_density(alpha = 0.2, fill = "#FF6666") +
+  labs(title = "Salinity Distribution", x = "Salinity (ppt)", y = "Density") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+Maximum Density at Zero Salinity:\
+The greatest peak or maximum density is shown at or around the salinity value of 0 in the histogram for the "Salinity (ppt)" variable.\
+This suggests that there are a sizable number of observations or cases in the dataset where the salinity level is close to zero points per cent.\
+Stated otherwise, the dataset's most prevalent salinity value is in or near 0 ppt.
+\
+Interpretation\
+A significant percentage of the water samples in the dataset may have extremely low salt levels or perhaps represent freshwater sources, as shown by the occurrence of a peak at a salinity value of 0.\
+This finding may be important for comprehending how salinity levels vary among various settings or situations as depicted in the dataset.
+
+It might also make people wonder or encourage more research into the variables that affect salinity levels, like proximity to freshwater sources, seasonal changes, or human activities.
+
+**Salinity Over Time:**
+
+```{r, echo=FALSE}
+
+# Select Date and Salinity columns and remove rows with missing values
+df <- df %>% select(Date, `Salinity (ppt)`) %>% na.omit()
+
+# Convert Date column to Date format
+df$Date <- as.Date(df$Date)
+
+# Plot using ggplot2
+ggplot(df, aes(x = Date, y = `Salinity (ppt)`)) +
+  geom_line() +
+  labs(x = "Date", y = "Salinity (ppt)", title = "Salinity Over Time") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+With dates on the x-axis and salinity values on the y-axis, the graphic shows the trend of salinity levels over time.
+\
+The trend line shows the variations in salinity levels across various time intervals.\
+It is evident from the description that the salinity levels peaked between 1990 and 2020, surpassing a value of 7.5 ppt. By looking at the maxima in the salinity levels on the plot throughout these years, this information is deduced.
+
+**Dissolved Oxygen :**
+
+```{r, echo=FALSE}
+df <- read_csv("C:/Users/HP/OneDrive/Desktop/Master's/fourth sem_spring2024/ML and Data Science/waterquality.csv")
+ggplot(df, aes(x=`DissolvedOxygen (mg/L)`)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", aes(y=..density..), alpha = 0.5) +
+  geom_density(color = "blue") +
+  labs(x = "DissolvedOxygen (mg/L)", y = "Density", title = "Histogram of Dissolved Oxygen") +
+  theme_minimal()
+
+```
+
+The distribution of dissolved oxygen levels in the water samples is shown in the code's output, which is a histogram with a density plot overlay. A prominent density peak is shown in the region of 0.10 to 0.15 mg/L.
+
+**Water Depth :**
+
+```{r, echo=FALSE}
+# Histogram for WaterDepth (m)
+ggplot(df, aes(x = `WaterDepth (m)`)) +
+  geom_histogram(bins = 50, fill = "skyblue", color = "black") +
+  labs(x = "WaterDepth (m)", y = "Frequency", title = "Histogram of WaterDepth (m)")
+
+```
+
+1.  **`geom_histogram(bins = 50, fill = "skyblue", color = "black")`**: This line adds a histogram layer to the plot. It creates a histogram of the **`WaterDepth (m)`** variable with 50 bins. The **`fill`** parameter sets the color of the bars to "skyblue", and the **`color`** parameter sets the color of the border of the bars to "black".
+
+2.  it was being observed that less water depth has highest frequency i.e around 600.
+
+**pH:**
+
+```{r, echo=FALSE}
+# Plot histogram with density plot
+ggplot(df, aes(x = pH)) +
+  geom_histogram(aes(y=..density..), binwidth = 0.1, color = "black", fill = "skyblue") +
+  geom_density(alpha = 0.2, fill = "#FF6666") +
+  labs(title = "Histogram of pH", x = "pH", y = "Density")
+
+```
+
+The distribution of pH values in the dataset is displayed as a histogram with a density plot overlay as the code's output. Notably, the largest density of observations is seen in the pH range of 6 to 7.5.
+
+**Correlation Matrix:**
+
+```{r, echo=FALSE}
+# Load necessary libraries
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(corrplot)
+
+# Clear the existing plot device
+dev.off()
+
+# Load the dataset
+df <- read.csv("C:/Users/HP/OneDrive/Desktop/Master's/fourth sem_spring2024/ML and Data Science/waterquality.csv")
+
+# Calculate correlation matrix
+df_corr <- cor(df[, -1], use = "pairwise.complete.obs")  # Exclude the first column if it contains non-numeric data
+
+# Plot correlation matrix
+corrplot(df_corr, method = "color", type = "upper", order = "hclust", 
+         col = colorRampPalette(c("white", rgb(253/255, 174/255, 210/255)))(100), 
+         tl.col = "black", addCoef.col = "black", number.cex = 0.7)
+
+```
+
+It is being observed that SecchiDepth and WaterDepth has highest correlation of 0.82 which implies they have highest correlation. Also, waterTemp and Air Temp has second highest correlation of 0.68.
+
+**Monthly variation for pH:**
+
+```{r, echo=FALSE}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(lubridate) 
+
+# Convert Date column to date format
+df$Date <- as.Date(df$Date)
+
+# Set initial year
+year <- 2010
+
+# Create a list to store plots
+plot_list <- list()
+
+# Loop through years and create plots
+for (i in 1:3) {
+  for (j in 1:3) {
+    # Filter data for current year
+    X <- df[year(df$Date) == year, c("Date", "pH")]
+    
+    # Extract year from Date using lubridate's year function
+    X$Year <- year(X$Date)
+    
+    # Extract month from Date
+    X$Month <- month(X$Date)
+    
+    # Plot
+    plot <- ggplot(X, aes(x = Month, y = pH)) +
+      geom_line() +
+      labs(title = paste("pH vs month for", year))
+    
+    # Add plot to list
+    plot_list[[length(plot_list) + 1]] <- plot
+    
+    # Increment year
+    year <- year + 1
+  }
+}
+
+# Arrange plots in a grid
+gridExtra::grid.arrange(grobs = plot_list, ncol = 3)
+
+```
+
+In this pictorial description we can see the pH level varying in water from 2010 to 2018 and we have observed that overtime the pH level has reduced to 7.0 even after various fluctuation its highest variance was 7.0 in 2018.
+
+**Monthly Variation of dissolved Oxygen:**
+
+```{r}
+
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(gridExtra)
+
+# Convert Date column to date format
+df$Date <- as.Date(df$Date)
+
+# Create a function to generate monthly variations plot for DissolvedOxygen
+monthly_variations <- function(data, start_year, end_year) {
+  plots <- list()
+  for (year in start_year:end_year) {
+    X <- data %>%
+      filter(year(Date) == year) %>%
+      select(Date, `DissolvedOxygen (mg/L)`)
+    p <- ggplot(X, aes(x = month(Date), y = `DissolvedOxygen (mg/L)`)) +
+      geom_line() +
+      labs(title = paste("DissolvedOxygen vs month for", year))
+    plots[[length(plots) + 1]] <- p
+  }
+  return(plots)
+}
+
+# Create monthly variations plot for DissolvedOxygen
+plots <- monthly_variations(df, 2010, 2012)
+
+# Arrange and display plots
+grid.arrange(grobs = plots, ncol = 3)
+```
+
+we have observed that overtime with passing year dissolved oxygen reduced in 2018. wherein in contrary to other year where it dropped but then the dissolved oxygen used to increase.
+
+**Linear Regresion:**
+
+```{r, echo=FALSE}
+# Load necessary libraries
+library(readr)
+library(dplyr)
+library(tidymodels)
+library(broom)
+library(ggplot2)
+
+# Load the dataset
+df <- read_csv("C:/Users/HP/OneDrive/Desktop/Master's/fourth sem_spring2024/ML and Data Science/waterquality.csv")
+
+# Check the structure of the dataset
+str(df)
+
+# Rename columns to remove spaces and special characters
+colnames(df) <- c("Date", "Salinity", "Dissolved_Oxygen", "pH", "Secchi_Depth", "Water_Depth", "Water_Temperature", "Air_Temperature")
+
+# Perform linear regression
+linear_model <- lm(Salinity ~ Water_Temperature + pH, data = df)
+
+# Tidy the results
+tidy_results <- tidy(linear_model)
+print(tidy_results)
+
+# Visualize the linear regression result through a scatterplot
+scatterplot <- ggplot(df, aes(x = Water_Temperature, y = Salinity)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +  # Add linear regression line
+  labs(x = "Water Temperature (C)", y = "Salinity (ppt)",
+       title = "Scatterplot of Salinity vs Water Temperature with Linear Regression")
+
+print(scatterplot)
+# Plot posterior distributions
+plot(bayesian_model)
+
+# Calculate R-squared value
+r_squared <- summary(linear_model)$r.squared
+print(paste("R-squared value:", round(r_squared, 3)))
+
+```
+
+The scattered pattern of points around this line suggests that there might be no strong linear relationship between Salinity and the predictor variables or that the model assumptions might not be met.
+
+**conclusion :**\
+The examination of the water quality information yielded significant knowledge about the distribution, patterns, and connections between different water quality factors. Stakeholders can guarantee the availability of clean, drinkable water for communities while maintaining the integrity of aquatic ecosystems by using these findings to inform their decision-making.
+
+**Recommendations:**
+
+Constant Observation:
+Establish ongoing monitoring procedures to evaluate changes in the parameters governing water quality throughout time.
+Frequent monitoring enables prompt response in the event that standard water quality values are deviated from.
+\
+Specific Interventions:
+Determine which regions or priority locations have continuously low water quality so that efforts can be focused there.
+Upgrades to the infrastructure, steps to reduce pollutants, and community education programs are a few examples of interventions.
+\
+Engaging Stakeholders:
+Involve pertinent parties in water quality management initiatives, such as regional communities, governmental institutions, and environmental advocacy groups.
+Encourage cooperation and information exchange to successfully handle challenging issues with water quality.
+\
+**Citations**:\
+Water Quality Data in the Kaggle Dataset\
+Additional references were reviewed in order to analyze and interpret.
